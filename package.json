@@ -1,0 +1,20 @@
+{
+  "name": "table-editor",
+  "main": "./lib/table-editor",
+  "version": "0.0.0",
+  "description": "A short description of your package",
+  "keywords": [],
+  "repository": "https://github.com/atom/atom-table-editor",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "ascii-table": "0.0.8",
+    "asciiparse": "https://github.com/klorenz/asciiparse#master",
+    "atom-syntax-tools": "^0.6.0",
+    "cli-table": "^0.3.1",
+    "first-mate": "^5.0.0",
+    "q": "^1.4.1"
+  }
+}
