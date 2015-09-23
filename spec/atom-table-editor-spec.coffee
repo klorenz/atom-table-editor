@@ -25,7 +25,8 @@ describe "AtomTableEditor", ->
         .catch (e) ->
           console.log e.stack
 
-      runs ->
+    describe "markdown file 1", ->
+      beforeEach ->
         editor.insertText """
           Hello
 
@@ -35,78 +36,100 @@ describe "AtomTableEditor", ->
           | foo | bar |\n
         """
 
-    fit "adds table-editor-active class to text-editor, when cursor enters", ->
-      editor.setCursorBufferPosition [0,0]
-      expect('table-editor-active' not in editorElement.classList)
+      it "adds table-editor-active class to text-editor, when cursor enters", ->
+        editor.setCursorBufferPosition [0,0]
+        expect('table-editor-active' not in editorElement.classList)
 
-      editor.setCursorBufferPosition [4,0]
-      expect('table-editor-active' in editorElement.classList)
+        editor.setCursorBufferPosition [4,0]
+        expect('table-editor-active' in editorElement.classList)
 
-    fit "can step to next cell", ->
-      editor.setCursorBufferPosition [4,1]
-      expect('table-editor-active' in editorElement.classList)
+      it "can step to next cell", ->
+        editor.setCursorBufferPosition [4,1]
+        expect('table-editor-active' in editorElement.classList)
 
-      atom.commands.onDidDispatch (event) =>
-        expect(editor.getText()).toBe """
-          Hello
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            Hello
 
-          |  A  |  B  | C |
-          |-----|-----|---|
-          | a   | b   | c |
-          | foo | bar |   |\n
-        """
-        console.log editor.getCursorBufferPosition()
-        expect(editor.getCursorBufferPosition().toArray()).toEqual [4,8]
+            |  A  |  B  | C |
+            |-----|-----|---|
+            | a   | b   | c |
+            | foo | bar |   |\n
+          """
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,11]
 
-      expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
-      atom.commands.dispatch editorElement, 'table-editor:next-cell'
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
+
+      fit "can insert a new row", ->
+        editor.setCursorBufferPosition [3,1]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            Hello
+
+            |  A  |  B  | C |
+            |-----|-----|---|
+            | a   | b   | c |
+            |     |     |   |
+            | foo | bar |   |\n
+          """
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,8]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [3,1]
+        atom.commands.dispatch editorElement, 'table-editor:add-row'
 
 
-  describe "when the atom-table-editor:toggle event is triggered", ->
-    it "hides and shows the modal panel", ->
-      # Before the activation event the view is not on the DOM, and no panel
-      # has been created
-      expect(workspaceElement.querySelector('.atom-table-editor')).not.toExist()
-
-      # This is an activation event, triggering it will cause the package to be
-      # activated.
-      atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
-
-      waitsForPromise ->
-        activationPromise
-
-      runs ->
-        expect(workspaceElement.querySelector('.atom-table-editor')).toExist()
-
-        atomTableEditorElement = workspaceElement.querySelector('.atom-table-editor')
-        expect(atomTableEditorElement).toExist()
-
-        atomTableEditorPanel = atom.workspace.panelForItem(atomTableEditorElement)
-        expect(atomTableEditorPanel.isVisible()).toBe true
-        atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
-        expect(atomTableEditorPanel.isVisible()).toBe false
-
-    it "hides and shows the view", ->
-      # This test shows you an integration test testing at the view level.
-
-      # Attaching the workspaceElement to the DOM is required to allow the
-      # `toBeVisible()` matchers to work. Anything testing visibility or focus
-      # requires that the workspaceElement is on the DOM. Tests that attach the
-      # workspaceElement to the DOM are generally slower than those off DOM.
-      jasmine.attachToDOM(workspaceElement)
-
-      expect(workspaceElement.querySelector('.atom-table-editor')).not.toExist()
-
-      # This is an activation event, triggering it causes the package to be
-      # activated.
-      atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
-
-      waitsForPromise ->
-        activationPromise
-
-      runs ->
-        # Now we can test for view visibility
-        atomTableEditorElement = workspaceElement.querySelector('.atom-table-editor')
-        expect(atomTableEditorElement).toBeVisible()
-        atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
-        expect(atomTableEditorElement).not.toBeVisible()
+  # describe "when the atom-table-editor:toggle event is triggered", ->
+  #   it "hides and shows the modal panel", ->
+  #     # Before the activation event the view is not on the DOM, and no panel
+  #     # has been created
+  #     expect(workspaceElement.querySelector('.atom-table-editor')).not.toExist()
+  #
+  #     # This is an activation event, triggering it will cause the package to be
+  #     # activated.
+  #     atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
+  #
+  #     waitsForPromise ->
+  #       activationPromise
+  #
+  #     runs ->
+  #       expect(workspaceElement.querySelector('.atom-table-editor')).toExist()
+  #
+  #       atomTableEditorElement = workspaceElement.querySelector('.atom-table-editor')
+  #       expect(atomTableEditorElement).toExist()
+  #
+  #       atomTableEditorPanel = atom.workspace.panelForItem(atomTableEditorElement)
+  #       expect(atomTableEditorPanel.isVisible()).toBe true
+  #       atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
+  #       expect(atomTableEditorPanel.isVisible()).toBe false
+  #
+  #   it "hides and shows the view", ->
+  #     # This test shows you an integration test testing at the view level.
+  #
+  #     # Attaching the workspaceElement to the DOM is required to allow the
+  #     # `toBeVisible()` matchers to work. Anything testing visibility or focus
+  #     # requires that the workspaceElement is on the DOM. Tests that attach the
+  #     # workspaceElement to the DOM are generally slower than those off DOM.
+  #     jasmine.attachToDOM(workspaceElement)
+  #
+  #     expect(workspaceElement.querySelector('.atom-table-editor')).not.toExist()
+  #
+  #     # This is an activation event, triggering it causes the package to be
+  #     # activated.
+  #     atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
+  #
+  #     waitsForPromise ->
+  #       activationPromise
+  #
+  #     runs ->
+  #       # Now we can test for view visibility
+  #       atomTableEditorElement = workspaceElement.querySelector('.atom-table-editor')
+  #       expect(atomTableEditorElement).toBeVisible()
+  #       atom.commands.dispatch workspaceElement, 'atom-table-editor:toggle'
+  #       expect(atomTableEditorElement).not.toBeVisible()

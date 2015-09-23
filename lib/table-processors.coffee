@@ -59,7 +59,6 @@ processRestructuredTextTable = (tableText) ->
 
   result
 
-
 processMarkdownTable = (tableText) ->
   result = null
 
@@ -74,6 +73,12 @@ processMarkdownTable = (tableText) ->
   , (error, tableData) ->
     tableHeader = tableData[0]
     tableRows = tableData[1...]
+
+    # make sure the first line has same number of columns like header
+    if tableRows.length
+      firstRow = tableRows[0]
+      while firstRow.length < tableHeader.length
+        firstRow.push ''
 
     try
 
@@ -103,7 +108,7 @@ processTableText = (tableText, scopeName) =>
     processor = processRestructuredTextTable
   else if tableText.match /^\|.*\|\r?\n(?:\|:?-+:?)+\|/
     processor = processMarkdownTable
-  else if scopeName.match /markdown/
+  else if scopeName.match /markdown|source\.gfm/
     processor = processMarkdownTable
   else if scopeName.match /restructuredtext/
     processor = processRestructuredTextTable

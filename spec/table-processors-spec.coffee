@@ -1,4 +1,4 @@
-{processMarkdownTable} = require '../lib/table-processors.coffee'
+{processTableText} = require '../lib/table-processors.coffee'
 
 describe 'Table Processors', ->
   describe 'Markdown Processor', ->
@@ -10,14 +10,12 @@ describe 'Table Processors', ->
         | another value | here |
       '''
 
-      waitsForPromise ->
-        processMarkdownTable(inputTable).then (table) ->
-          expect(table).toBe '''
-            |     first     | second |
-            |---------------|--------|
-            | hello         | world  |
-            | another value | here   |\n
-            '''
+      expect(processTableText(inputTable)).toBe '''
+        |     first     | second |
+        |---------------|--------|
+        | hello         | world  |
+        | another value | here   |\n
+      '''
 
     it "can format a Markdown Table 2", ->
       inputTable = '''
@@ -27,11 +25,9 @@ describe 'Table Processors', ->
         | another value |
       '''
 
-      waitsForPromise ->
-        processMarkdownTable(inputTable).then (table) ->
-          expect(table).toBe '''
-            |     first     | second |
-            |---------------|--------|
-            | hello         | world  |
-            | another value |        |\n
-            '''
+      expect(processTableText(inputTable)).toBe '''
+        |     first     | second |
+        |---------------|--------|
+        | hello         | world  |
+        | another value |        |\n
+      '''
