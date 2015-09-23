@@ -2,9 +2,9 @@
   "name": "table-editor",
   "main": "./lib/table-editor",
   "version": "0.0.0",
-  "description": "A short description of your package",
+  "description": "Support for editing and navigating text tables (markdown, reStructuredText, etc.)",
   "keywords": [],
-  "repository": "https://github.com/atom/atom-table-editor",
+  "repository": "https://github.com/klorenz/atom-table-editor",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
