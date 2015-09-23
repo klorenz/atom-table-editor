@@ -14,6 +14,8 @@ processRestructuredTextTable = (tableText) ->
   , (error, tableData) ->
     return reject error if error
 
+
+
     tableHeader = tableData[0]
     tableRows = tableData[1...]
 
@@ -64,6 +66,8 @@ processMarkdownTable = (tableText) ->
 
   asciiparser = require('asciiparse')
 
+  hasHeader = tableText.match /^\|.*\|\n(\|-+)+\|\n/
+
   tableData = asciiparser.parseString tableText,
     rowSeparator: '-'
     junction: '|'
@@ -71,8 +75,12 @@ processMarkdownTable = (tableText) ->
     multiline: false
     header: off
   , (error, tableData) ->
-    tableHeader = tableData[0]
-    tableRows = tableData[1...]
+    if hasHeader
+      tableHeader = tableData[0]
+      tableRows = tableData[1...]
+    else
+      tableHeader = null
+      tableRows = tableData
 
     # make sure the first line has same number of columns like header
     if tableRows.length

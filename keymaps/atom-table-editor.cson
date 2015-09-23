@@ -9,5 +9,4 @@
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 'atom-text-editor:not([mini]).table-editor-active':
   'tab': 'table-editor:next-cell'
-'atom-text-editor:not([mini]).table-editor-active':
   'enter': 'table-editor:add-row'

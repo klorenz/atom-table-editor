@@ -50,12 +50,16 @@ module.exports = TableEditor =
         if @isMultiLine(editor, position)
           view.classList.add('table-editor-multi-line')
 
+        #atom.notifications.addInfo "Classes: "+view.classList
+
         return
 
     if isActive
       view.classList.remove('table-editor-active')
       if 'table-editor-multi-line' in view.classList
         view.classList.remove('table-editor-multi-line')
+
+      #atom.notifications.addInfo "Classes: "+view.classList
 
   deactivate: ->
     #@modalPanel.destroy()
@@ -116,7 +120,7 @@ module.exports = TableEditor =
 
     new TableFormatter {range, tableText, scopeName}
 
-  formatTable: (options) ->
+  formatTable: (options={}) ->
     editor = atom.workspace.getActiveTextEditor()
     selections = editor.getSelections()
     {tables, ranges} = @getTablesForSelections editor, selections

@@ -6,3 +6,7 @@ Inspired by great [Sublime Table Editor Package](https://github.com/vkocubinsky/
 ## Features
 
 - within a table press <tab> to step to next cell (table will be reformatted with adjusted bars)
+
+| foo | bar |
+|-----|-----|
+| fo  |     |
