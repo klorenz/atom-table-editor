@@ -1,5 +1,8 @@
 Q = require 'q'
 
+log_debug = ->
+#log_debug = console.debug.bind(console, "table-editor, table-processors")
+
 processRestructuredTextTable = (tableText) ->
   result = null
 
@@ -13,8 +16,6 @@ processRestructuredTextTable = (tableText) ->
     header: off
   , (error, tableData) ->
     return reject error if error
-
-
 
     tableHeader = tableData[0]
     tableRows = tableData[1...]
@@ -54,7 +55,8 @@ processRestructuredTextTable = (tableText) ->
     tableString = tableString.replace(/^[^\n]+\n/, '').replace(/[^\n]+\n?$/, "")
 
     # remove mid rows
-    midRow = tableString.match(/^(?:\|-+)+\|$/)[0]
+    #tableString = tableString.replace(/^(?:\|-+)+\|$/m, '')
+
     # rows =
     # tableString =
     result = tableString
@@ -85,6 +87,9 @@ processMarkdownTable = (tableText) ->
     # make sure the first line has same number of columns like header
     if tableRows.length
       firstRow = tableRows[0]
+      log_debug "firstRow", firstRow
+      log_debug "tableHeader", tableHeader
+
       while firstRow.length < tableHeader.length
         firstRow.push ''
 
@@ -111,15 +116,20 @@ processMarkdownTable = (tableText) ->
   else
     return result
 
+processSimpleTable = (tableText) ->
+  processMarkdownTable tableText
+
 processTableText = (tableText, scopeName) =>
+  log_debug tableText
+
   if tableText.match /^(\+=+)+\+\r?\n\|.*\|\r?\n/
     processor = processRestructuredTextTable
   else if tableText.match /^\|.*\|\r?\n(?:\|:?-+:?)+\|/
     processor = processMarkdownTable
-  else if scopeName.match /markdown|source\.gfm/
-    processor = processMarkdownTable
   else if scopeName.match /restructuredtext/
     processor = processRestructuredTextTable
+  else if scopeName.match /markdown|source\.gfm/
+    processor = processMarkdownTable
   else
     processor = processSimpleTable
 

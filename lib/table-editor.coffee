@@ -1,10 +1,23 @@
 {CompositeDisposable, Range} = require 'atom'
 {processMarkdownTable} = require './table-processors.coffee'
-{ScopeSelector} = require 'first-mate'
+# {ScopeSelector} = require 'first-mate'
 TableFormatter = require './table-formatter.coffee'
 Q = require 'q'
 
+log_debug = ->
+#log_debug = console.debug.bind(console, "table-editor")
+
 module.exports = TableEditor =
+  # config:
+  #   enableCharacterMnemonics:
+  #     type: "boolean"
+  #     default: false
+  #     description: """
+  #       If enabled, you can use character mnemonics for inserting unicode
+  #       characters as described in RFC 1345.  You may know this feature from
+  #       VIM as "digraphs".
+  #     """
+
   subscriptions: null
 
   activate: (state) ->
@@ -22,6 +35,15 @@ module.exports = TableEditor =
       'table-editor:prev-cell': => @formatTable moveCell: -1
     @subscriptions.add atom.commands.add 'atom-text-editor.table-editor-active',
       'table-editor:format': => @formatTable()
+
+    @subscriptions.add atom.commands.add 'atom-text-editor.table-editor-active',
+      'table-editor:insert-row-after-current-row': => @formatTable moveToColumn: 1, moveRow: 1, withTable: (table) ->
+         table.insertRow()
+
+    @subscriptions.add atom.commands.add 'atom-text-editor.table-editor-active',
+      'table-editor:insert-row-before-current-row': => @formatTable moveToColumn: 1, moveRow: 0, withTable: (table) ->
+         table.insertRow(before: yes)
+
     # @subscriptions.add atom.commands.add 'atom-text-editor.table-editor-active',
     #   'table-editor:add-row': => @formatTable moveToColumn: 1, moveRow: 1, withTable: (table) ->
     #     table.insertRow()
@@ -29,7 +51,6 @@ module.exports = TableEditor =
     # @subscriptions.add atom.commands.add 'atom-text-editor.table-editor-active.table-editor-multi-line',
     #   'table-editor:add-new-cell-line': => @formatTable()
 
-    @scopeSelector = new ScopeSelector('source table, text meta.table')
 
     atom.workspace.observeTextEditors (editor) =>
       @subscriptions.add editor.onDidChangeCursorPosition (event) =>
@@ -41,9 +62,11 @@ module.exports = TableEditor =
   didChangeCursorPosition: (editor) ->
     view = atom.views.getView(editor)
     isActive = 'table-editor-active' in view.classList
+    log_debug("didChangeCursorPosition: #{isActive}")
 
     for position in editor.getCursorBufferPositions()
       if @isInTable editor, position
+        log_debug("isInTable!")
         return if isActive
 
         view.classList.add('table-editor-active')
@@ -75,7 +98,31 @@ module.exports = TableEditor =
     return false
 
   isInTable: (editor, position) ->
-    @scopeSelector.matches editor.scopeDescriptorForBufferPosition(position).scopes
+    # first we assume, there is a table, if there are more than 2 | in a row
+    # and it starts and ends with |
+    line = editor.lineTextForBufferRow position.row ? position[0]
+    if line.match /^\s*\|.*?\|.*\|\s*$/
+      return true
+
+    # this would be the elegant way, but requiring first-mate is a mess
+    # @scopeSelector = new ScopeSelector('source table, text meta.table')
+    # @scopeSelector.matches editor.scopeDescriptorForBufferPosition(position).scopes
+    scopes = editor.scopeDescriptorForBufferPosition(position).scopes
+    if scopes[0].match /^text\.restructuredtext/
+      line = editor.lineTextForBufferRow position.row
+      #log_debug position, line
+      if line and line.match /(^\s*\|.*\|$|^\s*\+(\=+\+)+$|^\s*\+(\-+\+)+$)/
+        return true
+
+    log_debug scopes
+    return false unless scopes[0].match /^(text|source)(\.|$)/
+
+    for scope in scopes
+      log_debug scope
+      return true if scope.match /^(table|meta\.table|markup\.other\.table)(\.|$)/
+
+    return false
+
 
   isMultiLine: (editor, position) ->
     'restructuredtext' in editor.scopeDescriptorForBufferPosition(position).scopes[0]
@@ -101,6 +148,8 @@ module.exports = TableEditor =
   getTableForSelection: (editor, selection) ->
     position = selection.cursor.getBufferPosition()
     return unless @isInTable editor, position
+
+    # TODO: respect indentation?
 
     row = position.row
     while @isInTable editor, [row, position.column]
@@ -134,7 +183,7 @@ module.exports = TableEditor =
 
       editor.setTextInBufferRange table.getTableRange(), table.getFormattedTableText()
 
-    console.log ranges
+    log_debug ranges
     ranges.sort (a,b) -> a.compare b
 
     for selection in selections
@@ -142,9 +191,8 @@ module.exports = TableEditor =
 
     selection = editor.getLastSelection()
 
-    debugger
     for range in ranges
-      console.log range
+      log_debug range
       editor.addSelectionForBufferRange range
 
     selection.destroy()

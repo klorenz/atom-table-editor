@@ -10,7 +10,7 @@ describe "AtomTableEditor", ->
 
   beforeEach ->
     workspaceElement = atom.views.getView(atom.workspace)
-    activationPromise = atom.packages.activatePackage('atom-table-editor')
+    activationPromise = atom.packages.activatePackage('table-editor')
 
     waitsForPromise ->
       activationPromise
@@ -63,7 +63,28 @@ describe "AtomTableEditor", ->
         expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
         atom.commands.dispatch editorElement, 'table-editor:next-cell'
 
-      fit "can insert a new row", ->
+      it "automatically adds a row, if stepped over last cell", ->
+        editor.setCursorBufferPosition [5,13]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            Hello
+
+            |  A  |  B  | C |
+            |-----|-----|---|
+            | a   | b   | c |
+            | foo | bar |   |
+            |     |     |   |\n
+          """
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [6,5]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [5, 13]
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
+
+      it "can insert a new row", ->
         editor.setCursorBufferPosition [3,1]
         expect('table-editor-active' in editorElement.classList)
 

@@ -1,5 +1,9 @@
 {Range} = require 'atom'
 {processTableText} = require './table-processors.coffee'
+
+log_debug = ->
+log_debug = console.debug.bind(console, "table-editor, table-processors")
+
 module.exports =
 class TableFormatter
   constructor: ({@tableText, @scopeName, @range}={}) ->
@@ -9,7 +13,9 @@ class TableFormatter
     @selections = []
     @newLine = "\n"
 
-    console.log "text\n", @tableText
+    log_debug "TableFormatter: @tableText", @tableText
+
+    #console.log "text\n", @tableText
 
   getCellPosition: (lineText, position) ->
     {row, column} = position
@@ -47,7 +53,8 @@ class TableFormatter
     start += 1 while lineText[start] != ' '
     end -= 1 while lineText[end] != ' '
 
-    return new Range [row, start], [row, end]
+    # end counted one too far
+    return new Range [row, start], [row, end+1]
 
   getTableRange: -> @range
 
@@ -67,8 +74,22 @@ class TableFormatter
 
   getFormattedTableText: ->
     return @newTableText if @newTableText
-    console.log "tableText", @tableText
-    @newTableText = processTableText @tableText, @scopeName
+    #console.log "tableText", @tableText
+
+
+    debugger
+    tableText = @tableText
+    indent = null
+    if m = tableText.match(/^(\s+)/)
+      indent = m[1]
+      tableText = @tableText.replace(new RegExp("(^|\\n)#{indent}", 'g'), (m, nl) -> nl)
+
+    @newTableText = processTableText tableText, @scopeName
+
+    if indent?
+      @newTableText = @newTableText.replace(/(^|\n)/g, (m, nl) -> nl + indent).replace(/\s+$/, @newLine)
+
+    return @newTableText
 
   getNumColumns: (line) ->
     return line.match(/\|/g).length - 1
@@ -82,7 +103,7 @@ class TableFormatter
   #     @tableText
   #
   #   @newTableText = null
-  insertRow: ->
+  insertRow: ({before}={})->
     baseRow = @range.start.row
     offset = 0
     lines = @tableText.replace(/\r?\n$/, '').split(/\r?\n/)
@@ -90,6 +111,9 @@ class TableFormatter
     for range in @selections
       range.translate [offset, 0], [offset, 0]
       index = range.end.row - baseRow
+      if not before
+        index += 1
+
       line = lines[index]
       newLine = line.replace(/[^\|\s]/g, ' ')
       lines.splice index, 0, newLine
@@ -97,6 +121,23 @@ class TableFormatter
 
     @tableText = lines.join @newLine
     @newTableText = null
+
+  appendRow: ->
+    lines = @tableText.replace(/\r?\n$/, '').split(/\r?\n/)
+
+    lastTableRow = ''
+    i = 0
+    while not @isTableRow lastTableRow
+      i += 1
+      lastTableRow = lines[lines.length - i]
+
+    @tableText = @tableText + lastTableRow.replace(/[^\|\s]/g, ' ') + @newLine
+
+    if i > 1
+      @tableText += lines[lines.length-1] + @newLine
+
+    @newTableText = null
+
 
   # returns promise for this
   getSelectionRanges: (options) ->
@@ -120,8 +161,12 @@ class TableFormatter
         newIndex += 1
 
       lineMap[i] = newIndex
-      console.log "map #{i} -> #{newIndex}", line, newLines[newIndex]
-      #newIndex += 1
+
+      # count up, also two equal sequential lines are mapped correct
+      newIndex += 1
+
+    # have counted one too far
+    newIndex -= 1
 
     ranges = []
 
@@ -136,7 +181,7 @@ class TableFormatter
         if moveRow
           if i+moveRow < oldLines.length
             _i = i+moveRow
-            while @isRowSeparator lineMap[_i]
+            while @isRowSeparator newLines[lineMap[_i]]
               _i += 1
 
             cellPosition.row = baseRow + lineMap[_i]
@@ -154,7 +199,7 @@ class TableFormatter
           cellPosition.cell += moveCell
           if cellPosition.cell < 1
             # need to set row
-            cellPosition.cell = cellPosition.cells -1
+            cellPosition.cell = cellPosition.cells - 1
             searchLine = i
             while searchLine > 0
               searchLine -= 1
@@ -168,6 +213,8 @@ class TableFormatter
             while searchLine < oldLines.length
               searchLine += 1
               if searchLine >= oldLines.length
+                @appendRow()
+                cellPosition.row = baseRow + lineMap[searchLine-1] + 1
                 break
 
               if @isTableRow oldLines[searchLine]

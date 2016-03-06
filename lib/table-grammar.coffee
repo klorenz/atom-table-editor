@@ -7,10 +7,10 @@ grammar =
   injectionSelector: 'source, text'
 
   macros:
-    rstTableBorder: /^(?:\+=+)+\+$/
-    rstRowBorder: /^(?:\+-+)+\+$/
-    mdTableBorder: /^(?:\|(?:-+|:-+:|:-+|-+:))+\|$/
-    tableRow: /^\|.*\|$/
+    rstTableBorder: /^\s*(?:\+=+)+\+$/
+    rstRowBorder: /^\s*(?:\+-+)+\+$/
+    mdTableBorder: /^\s*(?:\|(?:-+|:-+:|:-+|-+:))+\|$/
+    tableRow: /^\s*\|.*\|$/
     EOR: '(?<=\\|)$'  # end of row
 
   patterns: [
@@ -37,7 +37,7 @@ grammar =
   repository:
     tableRow:
       n: 'meta.table.row'
-      b: /^(?=\|)/
+      b: /^(?=\s*\|)/
       e: /{EOR}/
       p: [
         '#tableCellBorder'
