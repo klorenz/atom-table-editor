@@ -5,8 +5,8 @@ Inspired by great [Sublime Table Editor Package](https://github.com/vkocubinsky/
 
 ## Features
 
-- within a table press <tab> to step to next cell (table will be reformatted with adjusted bars)
-
-| foo  | bar |
-|------|-----|
-| hell | fh  |
+- supports restructuredtext and markdown tables
+- table is autoformatted on each action
+- step to next cell with  `tab`
+- step to previous cell with `shift-tab`
+- insert new row after current with `shift-enter`
