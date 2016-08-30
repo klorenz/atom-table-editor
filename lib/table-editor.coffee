@@ -4,8 +4,8 @@
 TableFormatter = require './table-formatter.coffee'
 Q = require 'q'
 
-log_debug = ->
-#log_debug = console.debug.bind(console, "table-editor")
+# log_debug = ->
+log_debug = console.debug.bind(console, "table-editor")
 
 module.exports = TableEditor =
   # config:
@@ -97,22 +97,39 @@ module.exports = TableEditor =
       return table if table.containsPoint position
     return false
 
+  isTableRow: (line) ->
+    return false unless line
+    return true if line.match /^\s*\|.*?\|.*\|\s*$/
+    false
+
   isInTable: (editor, position) ->
+    row = position.row ? position[0]
     # first we assume, there is a table, if there are more than 2 | in a row
     # and it starts and ends with |
-    line = editor.lineTextForBufferRow position.row ? position[0]
-    if line.match /^\s*\|.*?\|.*\|\s*$/
+    line = editor.lineTextForBufferRow row
+
+    # if line is undefined, row is overflown or underflown
+    return false unless line
+
+    if @isTableRow line
       return true
+
+    previousLine = editor.lineTextForBufferRow(row-1)
+    nextLine     = editor.lineTextForBufferRow(row+1)
+
+    if line.match /(^\s*\+(\=+\+)+$|^\s*\+(\-+\+)+$)/
+      if @isTableRow(previousLine) or @isTableRow(nextLine)
+        return true
 
     # this would be the elegant way, but requiring first-mate is a mess
     # @scopeSelector = new ScopeSelector('source table, text meta.table')
     # @scopeSelector.matches editor.scopeDescriptorForBufferPosition(position).scopes
     scopes = editor.scopeDescriptorForBufferPosition(position).scopes
-    if scopes[0].match /^text\.restructuredtext/
-      line = editor.lineTextForBufferRow position.row
-      #log_debug position, line
-      if line and line.match /(^\s*\|.*\|$|^\s*\+(\=+\+)+$|^\s*\+(\-+\+)+$)/
-        return true
+    # if scopes[0].match(/^text\.restructuredtext/) or editor.getFileName().match(/\.rst$/)?
+    #   line = editor.lineTextForBufferRow position.row
+    #   #log_debug position, line
+    #   if line and line.match /(^\s*\|.*\|$|^\s*\+(\=+\+)+$|^\s*\+(\-+\+)+$)/
+    #     return true
 
     log_debug scopes
     return false unless scopes[0].match /^(text|source)(\.|$)/
@@ -150,6 +167,7 @@ module.exports = TableEditor =
     return unless @isInTable editor, position
 
     # TODO: respect indentation?
+    debugger
 
     row = position.row
     while @isInTable editor, [row, position.column]
@@ -183,6 +201,8 @@ module.exports = TableEditor =
 
       editor.setTextInBufferRange table.getTableRange(), table.getFormattedTableText()
 
+    debugger
+
     log_debug ranges
     ranges.sort (a,b) -> a.compare b
 
@@ -190,6 +210,8 @@ module.exports = TableEditor =
       selection.destroy()
 
     selection = editor.getLastSelection()
+
+
 
     for range in ranges
       log_debug range

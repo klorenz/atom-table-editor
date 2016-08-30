@@ -22,3 +22,36 @@ describe "TableFormatter", ->
       |-----|---|
       | foo |   |\n
       """
+
+  it "can format a rst table", ->
+    tableText = """
+      +------------------------+----------------------------------------------------------------------------+
+      | Sub Project            | Artifact Path                                                              |
+      +========================+============================================================================+
+      | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+      +------------------------+----------------------------------------------------------------------------+
+      | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+      +------------------------+----------------------------------------------------------------------------+
+      | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                      |
+      +------------------------+----------------------------------------------------------------------------+
+      | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                  |
+      +------------------------+----------------------------------------------------------------------------+
+      """
+    range = new Range [0,0], [9,102]
+    scopeName = 'text.restructuredtext'
+
+    tf = new TableFormatter {tableText, scopeName, range}
+
+    expect(tf.getFormattedTableText()).toBe """
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sub Project            | Artifact Path                                                                               |
+        +========================+=============================================================================================+
+        | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                           |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                       |
+        +------------------------+---------------------------------------------------------------------------------------------+
+    """

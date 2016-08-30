@@ -31,3 +31,34 @@ describe 'Table Processors', ->
         | hello         | world  |
         | another value |        |\n
       '''
+
+
+
+    it "can format a RST Table", ->
+      inputTable = """
+        +------------------------+----------------------------------------------------------------------------+
+        | Sub Project            | Artifact Path                                                              |
+        +========================+============================================================================+
+        | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+        +------------------------+----------------------------------------------------------------------------+
+        | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+        +------------------------+----------------------------------------------------------------------------+
+        | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                      |
+        +------------------------+----------------------------------------------------------------------------+
+        | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                  |
+        +------------------------+----------------------------------------------------------------------------+
+        """
+
+      expect(processTableText(inputTable)).toBe '''
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sub Project            | Artifact Path                                                                               |
+        +========================+=============================================================================================+
+        | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                           |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                       |
+        +------------------------+---------------------------------------------------------------------------------------------+
+      '''

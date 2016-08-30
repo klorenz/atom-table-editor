@@ -20,24 +20,26 @@ processRestructuredTextTable = (tableText) ->
     tableHeader = tableData[0]
     tableRows = tableData[1...]
 
+    console.log tableHeader, tableRows
+
     TableFormatter = require('cli-table')
 
     formatter = new TableFormatter {
       chars:
-        'top': '='
+        'top': '-'
         'top-mid': '+'
         'top-left': '+'
         'top-right': '+'
-        'bottom': '='
+        'bottom': '-'
         'bottom-mid': '+'
         'bottom-left': '+'
         'bottom-right': '+'
         'left': '|'
-        'left-mid': '|'
+        'left-mid': '+'
         'mid': '-'
-        'mid-mid': '|'
+        'mid-mid': '+'
         'right': '|'
-        'right-mid': '|'
+        'right-mid': '+'
         'middle': '|'
       style:
         head: []
@@ -47,18 +49,28 @@ processRestructuredTextTable = (tableText) ->
     }
 
     for row in tableRows
-      formatter.push row
+      if row.length
+        formatter.push row
 
     tableString = formatter.toString()
 
     # remove top and bottom row
-    tableString = tableString.replace(/^[^\n]+\n/, '').replace(/[^\n]+\n?$/, "")
+    #tableString = tableString.replace(/^[^\n]+\n/, '').replace(/[^\n]+\n?$/, "")
 
     # remove mid rows
     #tableString = tableString.replace(/^(?:\|-+)+\|$/m, '')
 
     # rows =
     # tableString =
+    #
+
+    # replace border under header row
+    [ border ] = tableString.match(/^.*\r?\n/)
+    border = border.replace /-/g, '='
+    tableString = tableString.replace /^(.*\r?\n(\|.*\r?\n)+).*\r?\n/, "$1#{border}"
+
+#    tableString = tableString.replace /^((.*\r?\n)(.*\r?\n)).*\r?\n/, "$1$2"
+
     result = tableString
 
   result
@@ -124,6 +136,8 @@ processTableText = (tableText, scopeName) =>
 
   if tableText.match /^(\+=+)+\+\r?\n\|.*\|\r?\n/
     processor = processRestructuredTextTable
+  else if tableText.match /^(\+-+)+\+\r?\n\|.*\|\r?\n/
+    processor = processRestructuredTextTable
   else if tableText.match /^\|.*\|\r?\n(?:\|:?-+:?)+\|/
     processor = processMarkdownTable
   else if scopeName.match /restructuredtext/
@@ -132,6 +146,8 @@ processTableText = (tableText, scopeName) =>
     processor = processMarkdownTable
   else
     processor = processSimpleTable
+
+  console.log processor
 
   processor tableText
 

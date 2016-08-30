@@ -2,7 +2,7 @@
 {processTableText} = require './table-processors.coffee'
 
 log_debug = ->
-log_debug = console.debug.bind(console, "table-editor, table-processors")
+#log_debug = console.debug.bind(console, "table-editor, table-processors")
 
 module.exports =
 class TableFormatter
@@ -21,14 +21,16 @@ class TableFormatter
     {row, column} = position
     [cell, offset, cells] = [0, 0, 0]
 
+    cellBorder = '|'
+
     for c,i in lineText
-      if c == '|'
+      if c == cellBorder
         cells += 1
 
       if i >= column
         continue
 
-      if c == '|'
+      if c == cellBorder
         offset = 0
         cell += 1
       else
@@ -37,6 +39,7 @@ class TableFormatter
     return {offset, cell, cells}
 
   getRangeFromCellPosition: (lineText, {cell, row}) ->
+
     _cell = 0
     search = '|'
     for c,i in lineText
@@ -50,8 +53,8 @@ class TableFormatter
         end = i
         break
 
-    start += 1 while lineText[start] != ' '
-    end -= 1 while lineText[end] != ' '
+    start += 1 while lineText[start] != ' ' and start < lineText.length
+    end -= 1 while lineText[end] != ' ' and end > 0
 
     # end counted one too far
     return new Range [row, start], [row, end+1]
@@ -61,23 +64,22 @@ class TableFormatter
   containsPoint: (point) -> @range.containsPoint point
 
   linesEqual: (a, b) ->
+    return false unless b
+
     a = a.replace /\s*\|\s*/g, ''
     b = b.replace /\s*\|\s*/g, ''
 
     (a == b) or a.match(/^[\+=\-]+$/) and b.match(/^[\+=\-]+$/)
 
   isRowSeparator: (line) ->
-    return line.match(/^[\+=\-]+$/)
+    return line.match /^((\+=+)+\+|(\+-+)+\+|(\|-+)+\|)$/
 
   isTableRow: (line) ->
     line.match /^\s*\|[^-=].*\|$/
 
   getFormattedTableText: ->
     return @newTableText if @newTableText
-    #console.log "tableText", @tableText
 
-
-    debugger
     tableText = @tableText
     indent = null
     if m = tableText.match(/^(\s+)/)
@@ -149,6 +151,9 @@ class TableFormatter
     oldLines = @tableText.replace(/\r?\n$/, '').split(/\r?\n/)
     newLines = @getFormattedTableText().replace(/\r?\n$/, '').split(/\r?\n/)
 
+#    console.log "oldLines", oldLines
+#    console.log "newLines", newLines
+
     newIndex = 0
     selIndex = 0
 
@@ -168,6 +173,8 @@ class TableFormatter
     # have counted one too far
     newIndex -= 1
 
+    debugger
+
     ranges = []
 
     for line,i in oldLines
@@ -175,12 +182,26 @@ class TableFormatter
 
       while (range = @selections[selIndex])[tail].row == baseRow+i
         position = range[tail]
-        cellPosition = @getCellPosition line, position
-        cellPosition.row = baseRow + lineMap[i]
+
+        oldIndex = i
+
+        if @isRowSeparator line
+          _i = oldIndex+1
+          while @isRowSeparator oldLines[_i]
+            _i += 1
+          oldIndex = _i
+
+          position = {column: 1}
+
+          if moveCell > 0
+            moveCell -= 1
+
+        cellPosition = @getCellPosition oldLines[oldIndex], position
+        cellPosition.row = baseRow + lineMap[oldIndex]
 
         if moveRow
-          if i+moveRow < oldLines.length
-            _i = i+moveRow
+          if oldIndex+moveRow < oldLines.length
+            _i = oldIndex+moveRow
             while @isRowSeparator newLines[lineMap[_i]]
               _i += 1
 
@@ -200,7 +221,7 @@ class TableFormatter
           if cellPosition.cell < 1
             # need to set row
             cellPosition.cell = cellPosition.cells - 1
-            searchLine = i
+            searchLine = oldIndex
             while searchLine > 0
               searchLine -= 1
               if @isTableRow oldLines[searchLine]
@@ -209,7 +230,7 @@ class TableFormatter
 
           if cellPosition.cell >= cellPosition.cells
             cellPosition.cell = 1
-            searchLine = i
+            searchLine = oldIndex
             while searchLine < oldLines.length
               searchLine += 1
               if searchLine >= oldLines.length
@@ -221,7 +242,10 @@ class TableFormatter
                 cellPosition.row = baseRow + lineMap[searchLine]
                 break
 
-        ranges.push @getRangeFromCellPosition newLines[newIndex], cellPosition
+        debugger
+
+        #ranges.push @getRangeFromCellPosition newLines[newIndex], cellPosition
+        ranges.push @getRangeFromCellPosition newLines[lineMap[oldIndex]], cellPosition
         selIndex += 1
 
         if selIndex >= @selections.length

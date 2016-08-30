@@ -15,6 +15,63 @@ describe "AtomTableEditor", ->
     waitsForPromise ->
       activationPromise
 
+  describe "when a restructuredText file is opened", ->
+    beforeEach ->
+      waitsForPromise ->
+        atom.workspace.open('test.rst').then (e) ->
+          editor = e
+          editorElement = atom.views.getView(editor)
+        .catch (e) ->
+          console.log e.stack
+
+    describe "rst file 1", ->
+      cleanTable = """
+        Hello
+
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sub Project            | Artifact Path                                                                               |
+        +========================+=============================================================================================+
+        | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                           |
+        +------------------------+---------------------------------------------------------------------------------------------+
+        | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                       |
+        +------------------------+---------------------------------------------------------------------------------------------+
+      """
+
+      beforeEach ->
+        editor.insertText """
+          Hello
+
+          +------------------------+----------------------------------------------------------------------------+
+          | Sub Project            | Artifact Path                                                              |
+          +========================+============================================================================+
+          | Sunflower Studio Tasks | ``src-root/sunflower-studio/sunflower-sri/com.sri.sunflower.distrib.tasks/target/products`` |
+          +------------------------+----------------------------------------------------------------------------+
+          | Sunflower Studio CE    | ``src-root/sunflower-studio/sunflower-open/com.sri.sunflower.distrib.core/target/products`` |
+          +------------------------+----------------------------------------------------------------------------+
+          | Floralib               | ``src-root/sunflower-foundation/floralib/target``                                      |
+          +------------------------+----------------------------------------------------------------------------+
+          | Floralib External      | ``src-root/sunflower-foundation/floralib-ext/target``                                  |
+          +------------------------+----------------------------------------------------------------------------+
+        """
+
+      it "can step to next cell", ->
+        editor.setCursorBufferPosition [4,1]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe cleanTable
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [5,25]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
+
+
   describe "when a markdown file is opened", ->
 
     beforeEach ->
@@ -61,6 +118,26 @@ describe "AtomTableEditor", ->
           expect(editor.getCursorBufferPosition().toArray()).toEqual [4,11]
 
         expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
+
+      it 'can step to next cell if cursor on border', ->
+        editor.setCursorBufferPosition [3,10]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            Hello
+
+            |  A  |  B  | C |
+            |-----|-----|---|
+            | a   | b   | c |
+            | foo | bar |   |\n
+          """
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [3,10]
         atom.commands.dispatch editorElement, 'table-editor:next-cell'
 
       it "automatically adds a row, if stepped over last cell", ->
