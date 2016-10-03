@@ -1,9 +1,9 @@
 Q = require 'q'
 
-log_debug = ->
-#log_debug = console.debug.bind(console, "table-editor, table-processors")
+log_debug = require('./log_debug') "table-editor, table-processors"
 
 processRestructuredTextTable = (tableText) ->
+  console.log "process restructured text table"
   result = null
 
   asciiparser = require('asciiparse')
@@ -76,11 +76,14 @@ processRestructuredTextTable = (tableText) ->
   result
 
 processMarkdownTable = (tableText) ->
+  console.log "process markdown table"
   result = null
 
   asciiparser = require('asciiparse')
 
-  hasHeader = tableText.match /^\|.*\|\n(\|-+)+\|\n/
+  headerPart = /^\|.*\|\n(\|-+)+\|\n/
+
+  hasHeader = tableText.match headerPart
 
   tableData = asciiparser.parseString tableText,
     rowSeparator: '-'
@@ -89,25 +92,33 @@ processMarkdownTable = (tableText) ->
     multiline: false
     header: off
   , (error, tableData) ->
+
+    debugger
+
     if hasHeader
       tableHeader = tableData[0]
       tableRows = tableData[1...]
+
+    # else if tableData.length is 1
+    #   tableHeader = tableData[0]
+    #   tableRows   = [ ('' for cell in tableHeader) ]
     else
       tableHeader = null
       tableRows = tableData
 
-    # make sure the first line has same number of columns like header
-    if tableRows.length
-      firstRow = tableRows[0]
-      log_debug "firstRow", firstRow
-      log_debug "tableHeader", tableHeader
+    log_debug "tableHeader", tableHeader
+    log_debug "tableRows", tableRows
 
+    # make sure the first line has same number of columns like header
+    if tableRows.length and tableHeader?
+      firstRow = tableRows[0]
       while firstRow.length < tableHeader.length
         firstRow.push ''
 
     try
 
       AsciiTable = require('ascii-table')
+
       formatter = AsciiTable.factory(
         heading: tableHeader
         rows: tableRows
@@ -118,7 +129,12 @@ processMarkdownTable = (tableText) ->
       # remove top and bottom row
       tableString = tableString.replace(/^[^\n]+\n/, '').replace(/[^\n]+\n?$/, "")
 
+      unless tableHeader?
+        debugger
+        tableString = tableString.replace headerPart, ''
+
       result = tableString
+      log_debug "result", tableString
 
     catch error
       result = error

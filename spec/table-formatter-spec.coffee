@@ -4,10 +4,10 @@ describe "TableFormatter", ->
     tf = new TableFormatter
     range = tf.getRangeFromCellPosition "| A | b | C |", {cell: 2, row: 2}
     expect(range).toEqual
-    expect(range.serialize()).toEqual [[2,5],[2,7]]
+    expect(range.serialize()).toEqual [[2,5],[2,8]]
     expect(range.start.row).toEqual 2
 
-  it "format a table", ->
+  it "formats a table", ->
     tableText = """
       | A | B |
       |---|---|
@@ -22,6 +22,20 @@ describe "TableFormatter", ->
       |-----|---|
       | foo |   |\n
       """
+
+  it "formats a headless table", ->
+    tableText = """
+      | a | b |\n
+    """
+    range = new Range [0,0], [0,9]
+    scopeName = 'source.gfm'
+
+    tf = new TableFormatter {tableText, scopeName, range}
+    expect(tf.getFormattedTableText()).toBe """
+      | a | b |
+      |---|---|
+      |   |   |\n
+    """
 
   it "can format a rst table", ->
     tableText = """

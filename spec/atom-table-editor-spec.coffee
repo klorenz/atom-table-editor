@@ -113,9 +113,9 @@ describe "AtomTableEditor", ->
             | a   | b   | c |
             | foo | bar |   |\n
           """
-          console.log "did dispatch: ", editor.getCursorBufferPosition()
-          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
-          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,11]
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,12]
+          selection = editor.getLastSelection()
+          expect(editor.getTextInBufferRange selection.getBufferRange()).toBe " b   "
 
         expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
         atom.commands.dispatch editorElement, 'table-editor:next-cell'
@@ -133,9 +133,9 @@ describe "AtomTableEditor", ->
             | a   | b   | c |
             | foo | bar |   |\n
           """
-          console.log "did dispatch: ", editor.getCursorBufferPosition()
-          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
-          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+          selection = editor.getLastSelection()
+          expect(editor.getTextInBufferRange selection.getBufferRange()).toBe " a   "
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,6]
 
         expect(editor.getCursorBufferPosition().toArray()).toEqual [3,10]
         atom.commands.dispatch editorElement, 'table-editor:next-cell'
@@ -156,13 +156,15 @@ describe "AtomTableEditor", ->
           """
           console.log "did dispatch: ", editor.getCursorBufferPosition()
           console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
-          expect(editor.getCursorBufferPosition().toArray()).toEqual [6,5]
+          selection = editor.getLastSelection()
+          expect(editor.getTextInBufferRange selection.getBufferRange()).toBe "     "
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [6,6]
 
         expect(editor.getCursorBufferPosition().toArray()).toEqual [5, 13]
         atom.commands.dispatch editorElement, 'table-editor:next-cell'
 
       it "can insert a new row", ->
-        editor.setCursorBufferPosition [3,1]
+        editor.setCursorBufferPosition [4,1]
         expect('table-editor-active' in editorElement.classList)
 
         atom.commands.onDidDispatch (event) =>
@@ -179,9 +181,73 @@ describe "AtomTableEditor", ->
           console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
           expect(editor.getCursorBufferPosition().toArray()).toEqual [4,8]
 
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [4,1]
+        atom.commands.dispatch editorElement, 'table-editor:add-row'
+
+    describe "markdown file 2", ->
+      beforeEach ->
+        editor.insertText """
+          Hello
+
+          | A | B | C |
+          |---|---|---|\n
+        """
+
+      it "can insert a new row, if beeing on a separator row", ->
+        editor.setCursorBufferPosition [3,1]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            Hello
+
+            | A | B | C |
+            |---|---|---|
+            |   |   |   |\n
+          """
+          console.log "did dispatch: ", editor.getCursorBufferPosition()
+          console.log "did dispatch: ", (s.getBufferRange() for s in editor.getSelections())
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [4,8]
+
         expect(editor.getCursorBufferPosition().toArray()).toEqual [3,1]
         atom.commands.dispatch editorElement, 'table-editor:add-row'
 
+    describe "markdown file 3", ->
+      beforeEach ->
+        editor.insertText """
+          | A | B | C |
+        """
+
+      it "it creates a table if there is only one row (beeing on any cell)", ->
+        editor.setCursorBufferPosition [0,1]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            | A | B | C |\n
+          """
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [0,8]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [0,1]
+        console.log "dispatch table-editor:next", editorElement
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
+
+      it "it creates a table if there is only one row (beeing on last cell)", ->
+        editor.setCursorBufferPosition [0,10]
+        expect('table-editor-active' in editorElement.classList)
+
+        atom.commands.onDidDispatch (event) =>
+          expect(editor.getText()).toBe """
+            | A | B | C |
+            |---|---|---|
+            |   |   |   |\n
+          """
+          expect(editor.getCursorBufferPosition().toArray()).toEqual [2,4]
+
+        expect(editor.getCursorBufferPosition().toArray()).toEqual [0,10]
+
+        console.log "dispatch table-editor:next", editorElement
+        atom.commands.dispatch editorElement, 'table-editor:next-cell'
 
   # describe "when the atom-table-editor:toggle event is triggered", ->
   #   it "hides and shows the modal panel", ->

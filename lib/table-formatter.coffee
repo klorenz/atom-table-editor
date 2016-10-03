@@ -1,12 +1,14 @@
 {Range} = require 'atom'
 {processTableText} = require './table-processors.coffee'
 
-log_debug = ->
-#log_debug = console.debug.bind(console, "table-editor, table-processors")
+log_debug = require('./log_debug') "table-editor", "table-formatter"
 
 module.exports =
 class TableFormatter
   constructor: ({@tableText, @scopeName, @range}={}) ->
+
+    unless @tableText.match /\n$/
+      @tableText += "\n"
 
     #@tableText = @editor?.getTextInBufferRange @range
     #@scopeName = @editor?.scopeDescriptorForBufferPosition(range.start).scopes[0]
@@ -106,6 +108,8 @@ class TableFormatter
   #
   #   @newTableText = null
   insertRow: ({before}={})->
+    log_debug "insertRow", before
+
     baseRow = @range.start.row
     offset = 0
     lines = @tableText.replace(/\r?\n$/, '').split(/\r?\n/)
@@ -125,6 +129,8 @@ class TableFormatter
     @newTableText = null
 
   appendRow: ->
+    log_debug "appendRow"
+
     lines = @tableText.replace(/\r?\n$/, '').split(/\r?\n/)
 
     lastTableRow = ''
@@ -132,8 +138,15 @@ class TableFormatter
     while not @isTableRow lastTableRow
       i += 1
       lastTableRow = lines[lines.length - i]
+      break if lines.length is i
 
-    @tableText = @tableText + lastTableRow.replace(/[^\|\s]/g, ' ') + @newLine
+
+    if lines.length is 1
+      replacement = (m) ->
+          '-'.repeat(m.length)
+      @tableText += lastTableRow.replace(/[^\|]+/g, replacement) + @newLine
+
+    @tableText = @tableText + lastTableRow.replace(/[^\|\s]+/g, (m) -> ' '.repeat m.length) + @newLine
 
     if i > 1
       @tableText += lines[lines.length-1] + @newLine
@@ -143,6 +156,7 @@ class TableFormatter
 
   # returns promise for this
   getSelectionRanges: (options) ->
+    log_debug "getSelectionRanges", options
     {moveCell, moveRow, moveToColumn, moveToCell} = options
     moveCell ?= 0
 
@@ -172,8 +186,6 @@ class TableFormatter
 
     # have counted one too far
     newIndex -= 1
-
-    debugger
 
     ranges = []
 
@@ -233,16 +245,22 @@ class TableFormatter
             searchLine = oldIndex
             while searchLine < oldLines.length
               searchLine += 1
+
               if searchLine >= oldLines.length
                 @appendRow()
-                cellPosition.row = baseRow + lineMap[searchLine-1] + 1
-                break
+                targetRow = lineMap[searchLine-1] + 1
+                newLines = @tableText.split /\r?\n/
+                while not @isTableRow newLines[targetRow]
+                  targetRow += 1
+                  if targetRow >= newLines.length
+                    targetRow = newLines.length-1
+                    break
 
-              if @isTableRow oldLines[searchLine]
+                cellPosition.row = baseRow + targetRow
+
+              else if @isTableRow oldLines[searchLine]
                 cellPosition.row = baseRow + lineMap[searchLine]
                 break
-
-        debugger
 
         #ranges.push @getRangeFromCellPosition newLines[newIndex], cellPosition
         ranges.push @getRangeFromCellPosition newLines[lineMap[oldIndex]], cellPosition

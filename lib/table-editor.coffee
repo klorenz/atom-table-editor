@@ -4,8 +4,7 @@
 TableFormatter = require './table-formatter.coffee'
 Q = require 'q'
 
-# log_debug = ->
-log_debug = console.debug.bind(console, "table-editor")
+log_debug = require('./log_debug') "table-editor"
 
 module.exports = TableEditor =
   # config:
@@ -66,14 +65,12 @@ module.exports = TableEditor =
 
     for position in editor.getCursorBufferPositions()
       if @isInTable editor, position
-        log_debug("isInTable!")
+        log_debug("isInTable! - active:", isActive)
         return if isActive
 
         view.classList.add('table-editor-active')
         if @isMultiLine(editor, position)
           view.classList.add('table-editor-multi-line')
-
-        #atom.notifications.addInfo "Classes: "+view.classList
 
         return
 
@@ -82,12 +79,8 @@ module.exports = TableEditor =
       if 'table-editor-multi-line' in view.classList
         view.classList.remove('table-editor-multi-line')
 
-      #atom.notifications.addInfo "Classes: "+view.classList
-
   deactivate: ->
-    #@modalPanel.destroy()
     @subscriptions.dispose()
-    #@atomTableEditorView.destroy()
 
   serialize: ->
     #atomTableEditorViewState: @atomTableEditorView.serialize()
@@ -188,7 +181,10 @@ module.exports = TableEditor =
     new TableFormatter {range, tableText, scopeName}
 
   formatTable: (options={}) ->
+    log_debug "formatTable", options
+
     editor = atom.workspace.getActiveTextEditor()
+
     selections = editor.getSelections()
     {tables, ranges} = @getTablesForSelections editor, selections
 
@@ -201,8 +197,6 @@ module.exports = TableEditor =
 
       editor.setTextInBufferRange table.getTableRange(), table.getFormattedTableText()
 
-    debugger
-
     log_debug ranges
     ranges.sort (a,b) -> a.compare b
 
@@ -211,8 +205,6 @@ module.exports = TableEditor =
 
     selection = editor.getLastSelection()
 
-
-
     for range in ranges
       log_debug range
       editor.addSelectionForBufferRange range
@@ -220,7 +212,6 @@ module.exports = TableEditor =
     selection.destroy()
 
     @didChangeCursorPosition(editor)
-
 
 
   # toggle: ->
