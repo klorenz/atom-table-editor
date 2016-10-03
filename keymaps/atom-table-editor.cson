@@ -7,7 +7,7 @@
 
 # For more detailed documentation see
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
-'atom-text-editor:not([mini]).table-editor-active':
+'atom-text-editor:not([mini]):not(.autocomplete-active).table-editor-active':
   'tab': 'table-editor:next-cell'
   'shift-tab': 'table-editor:prev-cell'
   'shift-enter': 'table-editor:insert-row-after-current-row'
