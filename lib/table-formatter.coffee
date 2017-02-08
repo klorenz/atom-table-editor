@@ -93,6 +93,9 @@ class TableFormatter
     if indent?
       @newTableText = @newTableText.replace(/(^|\n)/g, (m, nl) -> nl + indent).replace(/\s+$/, @newLine)
 
+    @newTableText = @newTableText + @newLine
+
+
     return @newTableText
 
   getNumColumns: (line) ->
